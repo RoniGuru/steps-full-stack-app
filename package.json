@@ -1,8 +1,20 @@
 {
+  "name": "fullstack_project",
+  "version": "1.0.0",
+  "scripts": {
+    "server": "nodemon ./src/backend/server.ts"
+  },
   "dependencies": {
-    "express": "^4.21.2"
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "ts-node-dev": "^2.0.0"
   },
   "devDependencies": {
-    "@types/express": "^5.0.0"
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.2",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
   }
 }
