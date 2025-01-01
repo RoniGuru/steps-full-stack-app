@@ -1,13 +1,15 @@
 import express, { Express, Request, Response } from 'express';
 import userRouter from './routes/userRoutes';
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
 const app: Express = express();
 const port = process.env.PORT || 3300;
 
 app.use(express.json());
+app.use(cookieParser());
 
-app.use('/users', userRouter);
+app.use('/v1/users', userRouter);
 
 app.listen(port, () => {
   console.log(`[server]: Server is running at http://localhost:${port}sssddd`);
