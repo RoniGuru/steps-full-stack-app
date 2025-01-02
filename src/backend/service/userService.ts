@@ -2,7 +2,7 @@ export interface User {
   id: number;
   name: string;
   password: string;
-  refreshToken: string;
+  refreshToken?: string;
 }
 
 const users: User[] = [];
@@ -13,8 +13,9 @@ class UserService {
   }
 
   async getUserById(id: number): Promise<User | null> {
-    const user: User = users.filter((user) => user.id === id)[0];
-    return user;
+    let user: User = users.filter((user) => user.id === id)[0];
+    let { refreshToken, ...userWithoutToken } = user;
+    return userWithoutToken;
   }
 
   async checkUsername(name: string) {
@@ -26,7 +27,7 @@ class UserService {
     }
   }
 
-  async createUser(newUser: User) {
+  async createUser(newUser: User): Promise<User> {
     users.push(newUser);
     return newUser;
   }
@@ -38,6 +39,10 @@ class UserService {
     } else {
       return false;
     }
+  }
+
+  async updateUserRefreshToken(name: string, refreshToken: string) {
+    users.filter((user) => user.name === name)[0].refreshToken = refreshToken;
   }
 }
 

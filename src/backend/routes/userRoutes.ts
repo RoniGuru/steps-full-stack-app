@@ -5,6 +5,7 @@ import {
   getToken,
   register,
   login,
+  logout,
 } from '../controllers/userController';
 import jwt from 'jsonwebtoken';
 
@@ -16,6 +17,7 @@ router.get('/:id', authenticateToken, getUserById);
 
 router.post('/register', register);
 router.post('/login', login);
+router.post('/logout', logout);
 
 export default router;
 

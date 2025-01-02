@@ -50,6 +50,8 @@ export async function login(req: Request, res: Response) {
     const refreshToken = generateRefreshToken(user.name);
     const accessToken = generateAccessToken(user.name);
 
+    userService.updateUserRefreshToken(user.name, refreshToken);
+
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       sameSite: 'strict',
@@ -66,7 +68,23 @@ export async function login(req: Request, res: Response) {
   }
 }
 
-export async function logout(req: Request, res: Response) {}
+export async function logout(req: Request, res: Response) {
+  try {
+    const user = await userService.getUser(req.body.name);
+
+    if (typeof user == 'boolean') {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    userService.updateUserRefreshToken(user.name, '');
+    res.json({
+      message: 'you are logged out',
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'failed to logout user' });
+  }
+}
 
 export async function getUsers(req: Request, res: Response) {
   try {
@@ -93,7 +111,7 @@ export async function getUserById(req: Request, res: Response) {
 export async function createUser(req: Request, res: Response) {
   try {
     const userData: User = req.body;
-    console.log(req.body);
+
     const user: User = await userService.createUser(userData);
     res.status(201).json(user);
   } catch (error) {
@@ -155,7 +173,7 @@ export async function getToken(req: Request, res: Response) {
 
 export function generateAccessToken(name: string) {
   return jwt.sign({ name: name }, process.env.ACCESS_TOKEN_SECRET!, {
-    expiresIn: '2h',
+    expiresIn: '1hr',
   });
 }
 
