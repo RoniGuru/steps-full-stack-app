@@ -2,7 +2,7 @@ import express, { Express } from 'express';
 import userRouter from './routes/userRoutes';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import { mysqlDB } from './db/database';
+import { createUserDB, mysqlDB } from './db/database';
 
 const app: Express = express();
 const port = process.env.PORT || 3300;

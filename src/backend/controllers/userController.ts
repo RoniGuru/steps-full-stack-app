@@ -145,7 +145,7 @@ export async function getToken(req: Request, res: Response) {
       return;
     }
 
-    if (req.cookies.refreshToken != user.refreshToken) {
+    if (req.cookies.refreshToken != user.refresh_token) {
       res.status(401).json({ error: 'refresh token  not similar' });
       return;
     }
