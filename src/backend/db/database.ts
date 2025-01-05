@@ -1,6 +1,8 @@
 import mysql, { ResultSetHeader } from 'mysql2/promise';
 import { User } from '../service/userService';
+import dotenv from 'dotenv';
 
+dotenv.config();
 export const mysqlDB = mysql.createPool({
   host: 'localhost',
   user: process.env.LOCAL_USERNAME,
@@ -11,14 +13,14 @@ export const mysqlDB = mysql.createPool({
 export async function createUserDB(
   username: string,
   password: string
-): Promise<false | User> {
+): Promise<User | null> {
   try {
     const [results] = await mysqlDB.query<ResultSetHeader>(
       'Insert into users (name, password) values (?,?)',
       [username, password]
     );
 
-    if ((results.affectedRows = 0)) return false;
+    if ((results.affectedRows = 0)) return null;
 
     const [rows] = await mysqlDB.query<mysql.RowDataPacket[]>(
       'SELECT * FROM users WHERE name = ?',
@@ -29,27 +31,59 @@ export async function createUserDB(
   } catch (error) {
     console.log('error creating user in db');
     console.log(error);
-    return false;
+    return null;
   }
 }
 
-export async function getUserDB(id: number) {
+export async function checkUserNameDB(name: string): Promise<boolean> {
   try {
     const [rows] = await mysqlDB.query<mysql.RowDataPacket[]>(
       'Select * FROM users WHERE id = ?',
-      [id]
+      [name]
     );
 
-    if (rows.length === 0) return false;
+    if (rows.length === 0) return true;
 
-    return rows[0] as User;
+    return false;
   } catch (error) {
     console.log('error getting user in db');
     return false;
   }
 }
 
-export async function deleteUserDB(id: number) {
+export async function getUserByIdDB(id: number): Promise<User | null> {
+  try {
+    const [rows] = await mysqlDB.query<mysql.RowDataPacket[]>(
+      'Select * FROM users WHERE id = ?',
+      [id]
+    );
+
+    if (rows.length === 0) return null;
+
+    return rows[0] as User;
+  } catch (error) {
+    console.log('error getting user in db');
+    return null;
+  }
+}
+
+export async function getUserByNameDB(name: string): Promise<User | null> {
+  try {
+    const [rows] = await mysqlDB.query<mysql.RowDataPacket[]>(
+      'Select * FROM users WHERE name = ?',
+      [name]
+    );
+
+    if (rows.length === 0) return null;
+
+    return rows[0] as User;
+  } catch (error) {
+    console.log('error getting user in db');
+    return null;
+  }
+}
+
+export async function deleteUserDB(id: number): Promise<boolean> {
   try {
     const [results] = await mysqlDB.query<ResultSetHeader>(
       'delete from  users  where id = ?',
@@ -67,7 +101,10 @@ export async function deleteUserDB(id: number) {
   }
 }
 
-export async function updateUserNameDB(id: number, name: string) {
+export async function updateUserNameDB(
+  id: number,
+  name: string
+): Promise<boolean> {
   try {
     const [results] = await mysqlDB.query<ResultSetHeader>(
       'UPDATE users SET name = ? WHERE id = ?',
@@ -85,7 +122,10 @@ export async function updateUserNameDB(id: number, name: string) {
   }
 }
 
-export async function updateUserPasswordDB(id: number, password: string) {
+export async function updateUserPasswordDB(
+  id: number,
+  password: string
+): Promise<boolean> {
   try {
     const [results] = await mysqlDB.query<ResultSetHeader>(
       'UPDATE users SET password = ? WHERE id = ?',
@@ -106,7 +146,7 @@ export async function updateUserPasswordDB(id: number, password: string) {
 export async function updateUserRefreshTokenDB(
   id: number,
   refresh_token: string
-) {
+): Promise<boolean> {
   try {
     const [results] = await mysqlDB.query<ResultSetHeader>(
       'UPDATE users SET refresh_token = ? WHERE id = ?',

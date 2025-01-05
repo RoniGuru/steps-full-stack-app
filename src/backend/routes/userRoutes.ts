@@ -1,23 +1,24 @@
 import { Router, NextFunction, Request, Response } from 'express';
 import {
   getUserById,
-  getUsers,
   getToken,
   register,
   login,
   logout,
+  updateUser,
 } from '../controllers/userController';
 import jwt from 'jsonwebtoken';
 
 const router = Router();
-router.post('/token', getToken);
+router.post('/token/:id', getToken);
 
-router.get('/', getUsers);
 router.get('/:id', authenticateToken, getUserById);
-
+``;
 router.post('/register', register);
 router.post('/login', login);
-router.post('/logout', logout);
+router.post('/logout/:id', logout);
+
+router.post('/update/:id', authenticateToken, updateUser);
 
 export default router;
 
@@ -35,7 +36,7 @@ function authenticateToken(req: Request, res: Response, next: NextFunction) {
       res.sendStatus(401).json({ error: 'access token verification failed' });
       return;
     }
-    console.log(user);
+
     req.body.user = user;
     next();
   });

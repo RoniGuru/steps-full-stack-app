@@ -1,3 +1,11 @@
+import {
+  getUserByIdDB,
+  createUserDB,
+  deleteUserDB,
+  updateUserNameDB,
+  updateUserPasswordDB,
+  updateUserRefreshTokenDB,
+} from '../db/database';
 export interface User {
   id: number;
   name: string;
@@ -14,36 +22,28 @@ class UserService {
   }
 
   async getUserById(id: number): Promise<User | null> {
-    let user: User = users.filter((user) => user.id === id)[0];
-    let { refresh_token, ...userWithoutToken } = user;
+    let user = await getUserByIdDB(id);
+    if (!user) return null;
+    let { refresh_token, created_at, ...userWithoutToken } = user;
     return userWithoutToken;
   }
 
-  async checkUsername(name: string) {
-    const user: User = users.filter((user) => user.name === name)[0];
-    if (user) {
-      return false;
-    } else {
-      return true;
-    }
+  async createUser(name: string, password: string): Promise<User | null> {
+    const result = await createUserDB(name, password);
+    return result;
   }
 
-  async createUser(newUser: User): Promise<User> {
-    users.push(newUser);
-    return newUser;
-  }
+  // async getUser(name: string): Promise<User | boolean> {
+  //   const user: User = users.filter((user) => user.name === name)[0];
+  //   if (user) {
+  //     return user;
+  //   } else {
+  //     return false;
+  //   }
+  // }
 
-  async getUser(name: string): Promise<User | boolean> {
-    const user: User = users.filter((user) => user.name === name)[0];
-    if (user) {
-      return user;
-    } else {
-      return false;
-    }
-  }
-
-  async updateUserRefreshToken(name: string, refreshToken: string) {
-    users.filter((user) => user.name === name)[0].refresh_token = refreshToken;
+  async updateUserRefreshToken(id: number, refreshToken: string) {
+    const result = await updateUserRefreshTokenDB(id, refreshToken);
   }
 }
 

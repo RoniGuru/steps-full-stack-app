@@ -6,6 +6,17 @@ import jwt, {
   TokenExpiredError,
   NotBeforeError,
 } from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import {
+  getUserByIdDB,
+  createUserDB,
+  deleteUserDB,
+  updateUserNameDB,
+  updateUserPasswordDB,
+  updateUserRefreshTokenDB,
+  checkUserNameDB,
+  getUserByNameDB,
+} from '../db/database';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -18,16 +29,25 @@ interface UserPayload {
 
 export async function register(req: Request, res: Response) {
   try {
-    const user: User = req.body;
+    const { name, password } = req.body;
 
-    if (!(await userService.checkUsername(user.name))) {
-      res.status(500).json({ error: 'username is already used' });
+    const result = await checkUserNameDB(name);
+
+    if (!result) {
+      res.status(400).json({ error: 'user name already taken' });
       return;
     }
 
-    await userService.createUser(user);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    res.status(200).json({ user });
+    const user = await createUserDB(name, hashedPassword);
+
+    if (!user) {
+      res.status(500).json({ error: 'failed to register user' });
+      return;
+    }
+
+    res.status(200).json({ message: 'user registered' });
   } catch (error) {
     res.status(500).json({ error: 'failed to register user' });
   }
@@ -35,22 +55,30 @@ export async function register(req: Request, res: Response) {
 
 export async function login(req: Request, res: Response) {
   try {
-    const user = await userService.getUser(req.body.name);
+    const { name, password } = req.body;
+    const user = await getUserByNameDB(name);
 
-    if (typeof user == 'boolean') {
-      res.status(404).json({ error: 'User not found' });
+    if (!user) {
+      res.status(404).json({ error: 'details invalid' });
       return;
     }
 
-    if (user!.password != req.body.password) {
-      res.status(404).json({ error: 'invalid password' });
+    const compare = await bcrypt.compare(password, user.password);
+
+    if (!compare) {
+      res.status(404).send('password incorrect');
       return;
     }
 
     const refreshToken = generateRefreshToken(user.name);
     const accessToken = generateAccessToken(user.name);
 
-    userService.updateUserRefreshToken(user.name, refreshToken);
+    const update = await updateUserRefreshTokenDB(user.id, refreshToken);
+
+    if (!update) {
+      res.status(404).json({ error: 'cant update refresh token' });
+      return;
+    }
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
@@ -70,14 +98,20 @@ export async function login(req: Request, res: Response) {
 
 export async function logout(req: Request, res: Response) {
   try {
-    const user = await userService.getUser(req.body.name);
+    const user = await getUserByIdDB(Number(req.params.id));
 
-    if (typeof user == 'boolean') {
+    if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
 
-    userService.updateUserRefreshToken(user.name, '');
+    const update = updateUserRefreshTokenDB(user.id, '');
+
+    if (!update) {
+      res.status(404).json({ error: 'logout failed' });
+      return;
+    }
+
     res.json({
       message: 'you are logged out',
     });
@@ -86,48 +120,63 @@ export async function logout(req: Request, res: Response) {
   }
 }
 
-export async function getUsers(req: Request, res: Response) {
-  try {
-    const users = await userService.getUsers();
-    res.json(users);
-  } catch (error) {
-    res.status(500).json({ error: 'failed to fetch users' });
-  }
-}
 export async function getUserById(req: Request, res: Response) {
   try {
-    const user = await userService.getUserById(Number(req.params.id));
+    const user = await getUserByIdDB(Number(req.params.id));
 
     if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
 
-    res.status(200).json(user);
+    const { refresh_token, created_at, password, ...userWithoutToken } = user;
+
+    res.status(200).json(userWithoutToken);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch user' });
   }
 }
-export async function createUser(req: Request, res: Response) {
-  try {
-    const userData: User = req.body;
 
-    const user: User = await userService.createUser(userData);
-    res.status(201).json(user);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to create user' });
-  }
-}
 async function deleteUser(req: Request, res: Response) {}
-async function updateUser(req: Request, res: Response) {}
 
-function isUserPayload(payload: unknown): payload is UserPayload {
-  return (
-    typeof payload === 'object' &&
-    payload !== null &&
-    'name' in payload &&
-    typeof (payload as UserPayload).name === 'string'
-  );
+export async function updateUser(req: Request, res: Response) {
+  try {
+    const user = await getUserByIdDB(Number(req.params.id));
+    const { newName, password, newPassword } = req.body;
+
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    let result = false;
+
+    if (password) {
+      const compare = await bcrypt.compare(password, user.password);
+      console.log(compare);
+      if (compare) {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        result = await updateUserPasswordDB(
+          Number(req.params.id),
+          hashedPassword
+        );
+      } else {
+        res.status(400).json({ error: 'invalid password ' });
+        return;
+      }
+    } else if (newName) {
+      result = await updateUserNameDB(Number(req.params.id), newName);
+    }
+
+    if (result) {
+      res.status(200).json({ message: 'user updated' });
+    } else {
+      res.status(400).json({ error: 'user update failed' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch user' });
+  }
 }
 
 export async function getToken(req: Request, res: Response) {
@@ -138,9 +187,9 @@ export async function getToken(req: Request, res: Response) {
     }
 
     //compare refresh token with user
-    const user = await userService.getUser(req.body.name);
+    const user = await getUserByIdDB(Number(req.params.id));
 
-    if (typeof user == 'boolean') {
+    if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
@@ -153,18 +202,21 @@ export async function getToken(req: Request, res: Response) {
     const decoded = jwt.verify(
       req.cookies.refreshToken,
       process.env.REFRESH_TOKEN_SECRET!
-    );
-
-    if (!isUserPayload(decoded)) {
-      res.status(403).json({ error: 'Invalid token payload' });
-      return;
-    }
+    ) as UserPayload;
 
     // Generate new access token
     const accessToken = generateAccessToken(decoded.name);
 
     res.status(200).json({ accessToken: accessToken });
   } catch (error) {
+    if (error instanceof jwt.JsonWebTokenError) {
+      // Invalid signature
+      console.error('Invalid token');
+    } else if (error instanceof jwt.TokenExpiredError) {
+      // Token has expired
+      console.error('Token expired');
+    }
+
     res
       .status(500)
       .json({ error: 'Failed to get token or refresh token expired' });
