@@ -1,11 +1,5 @@
-import { userService, User } from '../service/userService';
 import { Response, Request } from 'express';
-import jwt, {
-  JwtPayload,
-  JsonWebTokenError,
-  TokenExpiredError,
-  NotBeforeError,
-} from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import {
   getUserByIdDB,
@@ -16,6 +10,7 @@ import {
   updateUserRefreshTokenDB,
   checkUserNameDB,
   getUserByNameDB,
+  User,
 } from '../db/database';
 import dotenv from 'dotenv';
 

@@ -13,7 +13,7 @@ const router = Router();
 router.post('/token/:id', getToken);
 
 router.get('/:id', authenticateToken, getUserById);
-``;
+
 router.post('/register', register);
 router.post('/login', login);
 router.post('/logout/:id', logout);
@@ -22,7 +22,11 @@ router.post('/update/:id', authenticateToken, updateUser);
 
 export default router;
 
-function authenticateToken(req: Request, res: Response, next: NextFunction) {
+export function authenticateToken(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 

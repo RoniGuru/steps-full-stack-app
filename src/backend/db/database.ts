@@ -1,5 +1,6 @@
 import mysql, { ResultSetHeader } from 'mysql2/promise';
-import { User } from '../service/userService';
+import { format } from 'date-fns';
+
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -9,6 +10,22 @@ export const mysqlDB = mysql.createPool({
   password: process.env.LOCAL_PASSWORD,
   waitForConnections: true,
 });
+
+export interface User {
+  id: number;
+  name: string;
+  password: string;
+  total_steps: number;
+  refresh_token?: string;
+  created_at?: Date;
+}
+
+export interface Step {
+  id: number;
+  steps: number;
+  step_date: Date;
+  user_id: number;
+}
 
 export async function createUserDB(
   username: string,
@@ -160,6 +177,83 @@ export async function updateUserRefreshTokenDB(
     }
   } catch (error) {
     console.log('error updating user refresh token in db');
+    return false;
+  }
+}
+
+export async function addStepDB(
+  user_id: number,
+  steps: number
+): Promise<boolean> {
+  try {
+    const connection = await mysqlDB.getConnection();
+    await connection.beginTransaction();
+    await connection.query('USE full_stack_test');
+
+    const [stepResults] = await connection.query<ResultSetHeader>(
+      'Insert into steps (user_id, steps) values (?,?)',
+      [user_id, steps]
+    );
+
+    const [userResults] = await connection.query<ResultSetHeader>(
+      'UPDATE users SET total_steps = total_steps + ? WHERE id = ?',
+      [steps, user_id]
+    );
+
+    if (stepResults.affectedRows === 0 || userResults.affectedRows === 0) {
+      await connection.rollback();
+      return false;
+    }
+
+    await connection.commit();
+    connection.release();
+    return true;
+  } catch (error) {
+    console.log('error adding step in db');
+    console.log(error);
+    return false;
+  }
+}
+
+export async function updateStepDB(
+  date: Date,
+  newSteps: number,
+  user_id: number
+) {
+  try {
+    const connection = await mysqlDB.getConnection();
+    await connection.beginTransaction();
+
+    await connection.query('USE full_stack_test');
+
+    const [currentSteps] = await connection.query<mysql.RowDataPacket[]>(
+      'SELECT steps FROM steps WHERE step_date = ? AND user_id = ?',
+      [date, user_id]
+    );
+
+    const stepDifference = newSteps - (currentSteps[0]?.steps || 0);
+
+    const [stepResults] = await connection.query<ResultSetHeader>(
+      'UPDATE steps SET steps = ? WHERE step_date = ? AND user_id = ?',
+      [newSteps, date, user_id]
+    );
+
+    const [userResults] = await connection.query<ResultSetHeader>(
+      'UPDATE users SET total_steps = total_steps + ? WHERE id = ?',
+      [stepDifference, user_id]
+    );
+
+    if (stepResults.affectedRows === 0 || userResults.affectedRows === 0) {
+      await connection.rollback();
+      return false;
+    }
+
+    await connection.commit();
+    connection.release();
+    return true;
+  } catch (error) {
+    console.log('error updating step in db');
+    console.log(error);
     return false;
   }
 }
