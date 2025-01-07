@@ -257,3 +257,42 @@ export async function updateStepDB(
     return false;
   }
 }
+
+export async function deleteStepDB() {}
+
+export async function getStepByMonthDB(
+  user_id: number,
+  month: number,
+  year: number
+): Promise<Step[] | null> {
+  try {
+    const [rows] = await mysqlDB.query<mysql.RowDataPacket[]>(
+      'SELECT * FROM steps WHERE user_id = ? AND MONTH(step_date) = ?  AND YEAR(step_date) = ?',
+      [user_id, month, year]
+    );
+
+    return rows as Step[];
+  } catch (error) {
+    console.log('error getting step by month in db');
+    console.log(error);
+    return null;
+  }
+}
+
+export async function getStepByYearDB(
+  user_id: number,
+  year: number
+): Promise<Step[] | null> {
+  try {
+    const [rows] = await mysqlDB.query<mysql.RowDataPacket[]>(
+      'SELECT * FROM steps WHERE user_id = ? AND YEAR(step_date) = ?',
+      [user_id, year]
+    );
+
+    return rows as Step[];
+  } catch (error) {
+    console.log('error getting by year step in db');
+    console.log(error);
+    return null;
+  }
+}
