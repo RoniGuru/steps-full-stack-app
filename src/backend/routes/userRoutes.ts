@@ -6,6 +6,7 @@ import {
   login,
   logout,
   updateUser,
+  deleteUser,
 } from '../controllers/userController';
 import jwt from 'jsonwebtoken';
 
@@ -13,6 +14,7 @@ const router = Router();
 router.post('/token/:id', getToken);
 
 router.get('/:id', authenticateToken, getUserById);
+router.delete('/delete/:id', authenticateToken, deleteUser);
 
 router.post('/register', register);
 router.post('/login', login);

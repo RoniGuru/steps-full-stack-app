@@ -132,7 +132,38 @@ export async function getUserById(req: Request, res: Response) {
   }
 }
 
-async function deleteUser(req: Request, res: Response) {}
+export async function deleteUser(req: Request, res: Response) {
+  try {
+    const user = await getUserByIdDB(Number(req.params.id));
+    const password = req.body.password;
+
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    if (password) {
+      const compare = await bcrypt.compare(password, user.password);
+      if (compare) {
+        const result = await deleteUserDB(Number(req.params.id));
+
+        if (result) {
+          res.status(200).json({ error: 'User deleted' });
+          return;
+        } else {
+          res.status(404).json({ error: 'User not deleted' });
+          return;
+        }
+      }
+    } else {
+      res.status(404).json({ error: 'invalid password' });
+    }
+
+    res.status(200).json();
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+}
 
 export async function updateUser(req: Request, res: Response) {
   try {
@@ -148,7 +179,7 @@ export async function updateUser(req: Request, res: Response) {
 
     if (password) {
       const compare = await bcrypt.compare(password, user.password);
-      console.log(compare);
+
       if (compare) {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
