@@ -258,7 +258,23 @@ export async function updateStepDB(
   }
 }
 
-export async function deleteStepDB() {}
+export async function deleteStepDB(user_id: number, step_id: number) {
+  try {
+    const [results] = await mysqlDB.query<ResultSetHeader>(
+      'delete from steps  where user_id = ? and id = ?',
+      [user_id, step_id]
+    );
+
+    if (results.affectedRows > 0) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch (error) {
+    console.log('error deleting step in db');
+    return false;
+  }
+}
 
 export async function getStepByMonthDB(
   user_id: number,

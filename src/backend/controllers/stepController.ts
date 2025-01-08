@@ -5,6 +5,7 @@ import {
   updateStepDB,
   getStepByMonthDB,
   getStepByYearDB,
+  deleteStepDB,
 } from '../db/database';
 
 dotenv.config();
@@ -40,6 +41,23 @@ export async function updateStep(req: Request, res: Response) {
     res.status(200).json({ message: 'step updated' });
   } catch (error) {
     res.status(500).json({ error: 'failed to add step to user' });
+  }
+}
+
+export async function deleteStep(req: Request, res: Response) {
+  try {
+    const step_id = req.body.step_id;
+
+    const result = await deleteStepDB(Number(req.params.id), step_id);
+
+    if (!result) {
+      res.status(500).json({ error: 'unable to delete step' });
+      return;
+    }
+
+    res.status(200).json({ message: 'step deleted' });
+  } catch (error) {
+    res.status(500).json({ error: 'failed to delete step' });
   }
 }
 
