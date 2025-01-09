@@ -1,5 +1,4 @@
 import mysql, { ResultSetHeader } from 'mysql2/promise';
-import { format } from 'date-fns';
 
 import dotenv from 'dotenv';
 
