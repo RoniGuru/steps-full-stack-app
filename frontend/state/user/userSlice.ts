@@ -33,7 +33,7 @@ export const deleteUser = createAsyncThunk('user/delete', async () => {});
 const userSlice = createSlice({
   name: 'user',
   initialState,
-  reducers: {},
+  reducers: { setUser: (state, action) => {} },
   extraReducers: (builder) => {
     builder
       .addCase(loginUser.fulfilled, (state, action) => {})
@@ -43,4 +43,5 @@ const userSlice = createSlice({
   },
 });
 
+export const { setUser } = userSlice.actions;
 export default userSlice.reducer;

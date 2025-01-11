@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Pedometer } from 'expo-sensors';
+import { router } from 'expo-router';
 
 export default function Index() {
   const [isPedometerAvailable, setIsPedometerAvailable] = useState('checking');
@@ -48,6 +49,10 @@ export default function Index() {
       <Text>Pedometer.isAvailableAsync(): {isPedometerAvailable}</Text>
       <Text>Steps taken in the last 24 hours: {pastStepCount}</Text>
       <Text>Walk! And watch this go up: {currentStepCount}</Text>
+
+      <Pressable onPress={() => router.push('/login')}>
+        <Text>go to login</Text>
+      </Pressable>
     </View>
   );
 }
